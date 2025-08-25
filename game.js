@@ -462,77 +462,85 @@ class GameObjectManager {
 // Main Game Class
 class PongGame {
   constructor() {
-    this.gameState = "menu";
-    this.gameMode = "speed";
-    this.gameTime = 0;
-    this.finalTime = 0;
-    this.score = 0;
-    this.lastBallSpawnTime = 0;
-    this.ballManager = new BallManager();
-    this.paddles = [];
+    // Game state variables
+    this.gameState = "menu";      // Current state: menu, playing, or gameOver
+    this.gameMode = "speed";      // Game mode: speed or agility
+    this.gameTime = 0;            // Elapsed game time (seconds)
+    this.finalTime = 0;           // Time at game over
+    this.score = 0;               // Player score
+    this.lastBallSpawnTime = 0;   // Last time a ball was spawned (agility mode)
+    this.ballManager = new BallManager(); // Handles ball creation and updates
+    this.paddles = [];            // Array of paddle objects
 
-    this.initializeGame();
-    this.setupEventHandlers();
+    this.initializeGame();        // Set up initial game state
+    this.setupEventHandlers();    // Register all event handlers
   }
 
+  // Show the main menu
   initializeGame() {
     this.showMenu();
   }
 
+  // Display menu UI and reset game objects
   showMenu() {
     this.gameState = "menu";
-    destroyAll("game");
-    destroyAll("header");
-    UIManager.createMenu(this.gameMode);
+    destroyAll("game");    // Remove all game objects
+    destroyAll("header");  // Remove header UI
+    UIManager.createMenu(this.gameMode); // Show menu UI
   }
 
+  // Start a new game session
   startGame() {
     this.gameState = "playing";
     this.gameTime = 0;
     this.lastBallSpawnTime = 0;
     this.score = 0;
-    this.ballManager.reset();
+    this.ballManager.reset(); // Remove all balls
 
-    destroyAll("menu");
-    destroyAll("gameOver");
+    destroyAll("menu");      // Remove menu UI
+    destroyAll("gameOver");  // Remove game over UI
 
-    UIManager.createHeader(this.gameMode, this);
-    this.createGameObjects();
+    UIManager.createHeader(this.gameMode, this); // Show header UI
+    this.createGameObjects();                    // Create paddles, score, and initial ball
   }
 
+  // Create paddles, score display, and initial ball
   createGameObjects() {
     this.paddles = GameObjectManager.createPaddles(UIManager.headerHeight);
     GameObjectManager.createScoreDisplay(this, UIManager.headerHeight);
     this.ballManager.createInitialBall(UIManager.headerHeight);
   }
 
+  // Show game over screen and final stats
   showGameOver() {
     this.gameState = "gameOver";
     this.finalTime = this.gameTime;
 
-    destroyAll("game");
-    destroyAll("header");
+    destroyAll("game");    // Remove game objects
+    destroyAll("header");  // Remove header UI
 
-    UIManager.createGameOverScreen(this.score, this.finalTime);
+    UIManager.createGameOverScreen(this.score, this.finalTime); // Show game over UI
   }
 
+  // Main game update loop (called every frame)
   updateGame() {
     if (this.gameState === "playing" && this.ballManager.count > 0) {
-      this.gameTime += dt();
+      this.gameTime += dt(); // Increment game time
 
-      // Spawn new balls in agility mode
+      // In agility mode, spawn new balls every 10 seconds (up to 10 balls)
       if (this.gameMode === "agility" && this.gameTime - this.lastBallSpawnTime >= 10 && this.ballManager.count < 10) {
         this.ballManager.spawnNewBall(UIManager.headerHeight, height());
         this.lastBallSpawnTime = this.gameTime;
       }
 
-      // Update all balls
+      // Update all balls (movement, collisions, game over check)
       this.ballManager.updateBalls(UIManager.headerHeight, height(), () => {
-        this.showGameOver();
+        this.showGameOver(); // End game if ball goes off screen
       });
     }
   }
 
+  // Update paddle positions based on mouse Y position
   updatePaddles() {
     if (this.gameState === "playing") {
       this.paddles.forEach((paddle) => {
@@ -542,41 +550,43 @@ class PongGame {
             UIManager.headerHeight,
             height()
           );
-          paddle.pos.y = constrainedY;
+          paddle.pos.y = constrainedY; // Move paddle to constrained position
         }
       });
     }
   }
 
+  // Handle collision between ball and paddle
   handleBallPaddleCollision(ball, paddle) {
     if (this.gameState === "playing") {
-      this.score++;
+      this.score++; // Increase score on hit
 
       // Calculate where the ball hit the paddle (normalized between -1 and 1)
       const paddleCenter = paddle.pos.y;
       const ballHitPos = ball.pos.y;
-      const paddleHeight = paddle.height || 140; // Get actual paddle height or use default
+      const paddleHeight = paddle.height || 140; // Use actual paddle height or default
       const hitOffset = (ballHitPos - paddleCenter) / (paddleHeight / 2);
-      
+
       // Clamp the hit offset to prevent extreme angles
       const clampedOffset = Math.max(-0.8, Math.min(0.8, hitOffset));
-      
+
       // Calculate new velocity based on hit position
-      // Ball should reflect horizontally and get vertical component based on hit position
+      // Ball reflects horizontally and gets vertical component based on hit position
       const newVelX = ball.pos.x < center().x ? 1 : -1; // Reflect horizontally
       const newVelY = clampedOffset; // Vertical component based on hit position
-      
+
       // Normalize the velocity vector
       const newVelocity = vec2(newVelX, newVelY).unit();
       ball.vel = newVelocity;
-      
-      // Mode-specific behavior - increase speed
+
+      // Increase ball speed for added challenge
       ball.speed += 80;
     }
   }
 
+  // Register all event handlers for UI and game logic
   setupEventHandlers() {
-    // Menu event handlers
+    // Menu button handlers
     onClick("startButton", () => {
       this.startGame();
     });
@@ -604,7 +614,7 @@ class PongGame {
       this.showMenu();
     });
 
-    // Game update handlers
+    // Paddle update handler (move paddles with mouse)
     onUpdate("paddle", (p) => {
       if (this.gameState === "playing") {
         const constrainedY = GameUtils.constrainPaddlePosition(
@@ -616,15 +626,17 @@ class PongGame {
       }
     });
 
+    // Main game update handler (called every frame)
     onUpdate(() => {
       this.updateGame();
     });
 
+    // Ball and paddle collision handler
     onCollide("ball", "paddle", (b, p) => {
       this.handleBallPaddleCollision(b, p);
     });
   }
 }
 
-// Initialize the game
+// Initialize the game by creating a PongGame instance
 const game = new PongGame();

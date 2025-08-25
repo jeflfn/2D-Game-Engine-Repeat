@@ -210,4 +210,80 @@ class UIManager {
       "header",
     ]);
   }
+  /**
+   * Creates the instruction text for the game.
+   * @param {object} responsive - The responsive configuration object.
+   */
+  static createInstructions(responsive) {
+    // Adds text guiding the player to use the mouse for control.
+    add([
+      text("Move your mouse to control the paddles", { size: responsive.buttonSize * 0.8 }),
+      pos(center().x, center().y + responsive.modalHeight * 0.15),
+      anchor("center"),
+      color(100, 100, 100),
+      z(40),
+      "menu",
+    ]);
+  }
+
+  /**
+   * Creates the "START GAME" button.
+   * @param {object} responsive - The responsive configuration object.
+   */
+  static createStartButton(responsive) {
+    // Creates a clickable "START GAME" text button.
+    add([
+      text("START GAME", { size: responsive.subtitleSize }),
+      pos(center().x, center().y + responsive.modalHeight * 0.28),
+      anchor("center"),
+      color(0, 150, 0),
+      area(),
+      z(40),
+      "menu",
+      "startButton",
+    ]);
+  }
+
+  /**
+   * Creates the game over screen, displaying the final score and time.
+   * @param {number} score - The final game score.
+   * @param {string} finalTime - The formatted final game time.
+   */
+  static createGameOverScreen(score, finalTime) {
+    const responsive = GameUtils.getResponsiveDimensions();
+    
+    // Game over background (responsive)
+    // Creates a modal-style background for the game over screen.
+    add([
+      pos(center().x, center().y),
+      rect(responsive.modalWidth, responsive.modalHeight),
+      color(240, 240, 240),
+      outline(4),
+      anchor("center"),
+      z(30),
+      "gameOver",
+    ]);
+
+    // Game Over title (responsive positioning)
+    // Adds the "GAME OVER!" title to the top of the modal.
+    add([
+      text("GAME OVER!", { size: responsive.titleSize }),
+      pos(center().x, center().y - responsive.modalHeight * 0.35),
+      anchor("center"),
+      color(200, 50, 50),
+      z(40),
+      "gameOver",
+    ]);
+
+    // Final score (responsive positioning)
+    // Displays the player's final score on the modal.
+    add([
+      text(`Final Score: ${score}`, { size: responsive.subtitleSize }),
+      pos(center().x, center().y - responsive.modalHeight * 0.15),
+      anchor("center"),
+      color(50, 50, 50),
+      z(40),
+      "gameOver",
+    ]);
+  }
 }

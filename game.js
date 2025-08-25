@@ -138,4 +138,76 @@ class GameUtils {
     };
   }
 }
-xcsdfasf
+// UI Manager Class
+class UIManager {
+  static headerHeight = 60;
+
+  /**
+   * Creates the game's top header with a title, game mode, and timer.
+   * @param {string} gameMode - The current game mode (e.g., 'singleplayer').
+   * @param {object} gameInstance - The main game object containing state like gameTime.
+   */
+  static createHeader(gameMode, gameInstance) {
+    const responsive = GameUtils.getResponsiveDimensions();
+    
+    // Header background
+    // Creates a black rectangle at the top of the screen.
+    add([
+      pos(0, 0),
+      rect(width(), this.headerHeight),
+      color(50, 50, 50),
+      z(10),
+      "header",
+    ]);
+
+    // Header title
+    // Adds the "PONG GAME" title to the header.
+    add([
+      text("PONG GAME", { size: responsive.headerSize }),
+      pos(20, this.headerHeight / 2),
+      anchor("left"),
+      color(255, 255, 255),
+      z(20),
+      "header",
+    ]);
+
+    // Mode display
+    // Shows the current game mode (e.g., "Mode: SINGLEPLAYER").
+    add([
+      text(`Mode: ${gameMode.toUpperCase()}`, { size: responsive.headerSize * 0.7 }),
+      pos(center().x, this.headerHeight / 2),
+      anchor("center"),
+      color(255, 255, 0),
+      z(20),
+      "header",
+    ]);
+
+    // Timer in header
+    // Displays the game time, updating it in real-time if the game is playing.
+    add([
+      text("Time: 0:00", { size: responsive.headerSize * 0.8 }),
+      pos(width() - 20, this.headerHeight / 2),
+      anchor("right"),
+      color(255, 255, 255),
+      z(20),
+      "header",
+      {
+        update() {
+          if (gameInstance && gameInstance.gameState === "playing") {
+            this.text = `Time: ${GameUtils.formatTime(gameInstance.gameTime)}`;
+          }
+        },
+      },
+    ]);
+
+    // Game area separator line
+    // Draws a thin gray line to separate the header from the game area.
+    add([
+      pos(0, this.headerHeight),
+      rect(width(), 2),
+      color(100, 100, 100),
+      z(15),
+      "header",
+    ]);
+  }
+}

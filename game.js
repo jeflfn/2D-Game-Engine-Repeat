@@ -315,3 +315,93 @@ class UIManager {
     ]);
   }
 }
+
+// Ball Manager Class
+class BallManager {
+  constructor() {
+    this.balls = [];
+  }
+
+  createBall(x, y, velocity, speed) {
+    // Breakpoint-based ball size
+    const responsive = GameUtils.getResponsiveDimensions();
+    const ballConfigs = {
+      mobile: { radius: 10 },
+      tablet: { radius: 12 },
+      laptop: { radius: 14 },
+      desktop: { radius: 16 }
+    };
+    
+    const ballRadius = ballConfigs[responsive.breakpoint].radius;
+    
+    const ball = add([
+      pos(x, y),
+      circle(ballRadius),
+      color(255, 100, 100),
+      outline(4),
+      area({ shape: new Rect(vec2(-ballRadius), ballRadius * 2, ballRadius * 2) }),
+      { vel: velocity, speed: speed },
+      "ball",
+      "game",
+    ]);
+
+    this.balls.push(ball);
+    return ball;
+  }
+
+  createInitialBall(headerHeight) {
+    // Create ball with more predictable starting angle
+    const startDirection = choose([-1, 1]); // Random left or right
+    const startAngle = rand(-30, 30); // Angle between -30 and 30 degrees
+    const initialVelocity = Vec2.fromAngle(startAngle).scale(vec2(startDirection, 1)).unit();
+    
+    return this.createBall(
+      center().x,
+      headerHeight + (height() - headerHeight) / 2,
+      initialVelocity,
+      600
+    );
+  }
+
+  spawnNewBall(headerHeight, gameHeight) {
+    const spawnInfo = GameUtils.getRandomSpawnPosition(headerHeight, gameHeight);
+    return this.createBall(spawnInfo.x, spawnInfo.y, spawnInfo.velocity, 600);
+  }
+
+  updateBalls(headerHeight, gameHeight, onGameOver) {
+    const ballsCopy = [...this.balls];
+
+    ballsCopy.forEach((ball) => {
+      if (ball && ball.exists()) {
+        ball.move(ball.vel.scale(ball.speed));
+
+        // Ball goes off screen horizontally - game over
+        if (ball.pos.x < 0 || ball.pos.x > width()) {
+          onGameOver();
+          return;
+        }
+
+        // Ball bounces off top/bottom walls with proper physics
+        if (ball.pos.y <= headerHeight || ball.pos.y >= gameHeight) {
+          // Reflect the Y velocity but keep X velocity the same
+          ball.vel.y = -ball.vel.y;
+          
+          // Ensure ball doesn't get stuck in walls
+          if (ball.pos.y <= headerHeight) {
+            ball.pos.y = headerHeight + 1;
+          } else if (ball.pos.y >= gameHeight) {
+            ball.pos.y = gameHeight - 1;
+          }
+        }
+      }
+    });
+  }
+
+  reset() {
+    this.balls = [];
+  }
+
+  get count() {
+    return this.balls.length;
+  }
+}

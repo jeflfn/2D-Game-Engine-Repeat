@@ -1,24 +1,20 @@
-// Import Kaboom.js library.
+// Import Kaboom.js library from CDN
 import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
 
-// Initialize Kaboom context with canvas dimensions and properties.
+// Initialize Kaboom context with canvas dimensions and properties
 kaboom({
-  // Set the background color to white.
-  background: [255, 255, 255],
-  // Set canvas width to full window width.
-  width: window.innerWidth,
-  // Set canvas height to full window height.
-  height: window.innerHeight,
-  // Make the game fullscreen.
-  fullscreen: true,
+  background: [255, 255, 255], // Set background color to white
+  width: window.innerWidth,    // Canvas width: full window width
+  height: window.innerHeight,  // Canvas height: full window height
+  fullscreen: true,            // Enable fullscreen mode
 });
 
-// A class for utility functions.
+// Utility class for game-related helper functions
 class GameUtils {
   /**
-   * Formats seconds into a "minutes:seconds" string.
-   * @param {number} seconds - The total number of seconds.
-   * @returns {string} The formatted time string.
+   * Converts seconds to "minutes:seconds" format.
+   * @param {number} seconds - Total seconds to format.
+   * @returns {string} - Formatted time string.
    */
   static formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
@@ -27,61 +23,60 @@ class GameUtils {
   }
 
   /**
-   * Generates a random spawn position and velocity on the left or right side of the screen.
-   * @param {number} headerHeight - The height of the top UI.
-   * @param {number} gameHeight - The height of the game area.
-   * @returns {{x: number, y: number, velocity: vec2}} Position and initial velocity.
+   * Returns a random spawn position and velocity for game objects.
+   * Spawns on left or right side of the screen.
+   * @param {number} headerHeight - Height of the header UI.
+   * @param {number} gameHeight - Height of the game area.
+   * @returns {{x: number, y: number, velocity: vec2}} - Position and velocity.
    */
   static getRandomSpawnPosition(headerHeight, gameHeight) {
-    const spawnSide = choose([0, 1]); // 0 = left, 1 = right
+    const spawnSide = choose([0, 1]); // 0: left, 1: right
     const spawnX = spawnSide === 0 ? 100 : width() - 100;
     const spawnY = headerHeight + 100 + rand(0, gameHeight - headerHeight - 200);
     const direction = spawnSide === 0 ? 1 : -1;
-    
     return {
       x: spawnX,
       y: spawnY,
       velocity: vec2(direction * 1, rand(-0.5, 0.5)).unit()
     };
   }
+
   /**
-   * Constrains the paddle position within the allowed vertical bounds.
-   * @param {number} mouseY - The current mouse Y position.
-   * @param {number} headerHeight - The height of the header UI.
-   * @param {number} screenHeight - The height of the screen.
-   * @returns {number} The constrained Y position for the paddle.
+   * Restricts paddle movement within vertical bounds.
+   * @param {number} mouseY - Mouse Y position.
+   * @param {number} headerHeight - Height of header UI.
+   * @param {number} screenHeight - Height of the screen.
+   * @returns {number} - Constrained Y position.
    */
   static constrainPaddlePosition(mouseY, headerHeight, screenHeight) {
-    // Get breakpoint-based paddle height
     const responsive = GameUtils.getResponsiveDimensions();
+    // Paddle height based on device breakpoint
     const paddleConfigs = {
       mobile: { height: 100 },
       tablet: { height: 120 },
       laptop: { height: 140 },
       desktop: { height: 160 }
     };
-    
     const paddleHeight = paddleConfigs[responsive.breakpoint].height;
     const minY = headerHeight + paddleHeight / 2;
     const maxY = screenHeight - paddleHeight / 2;
     return Math.max(minY, Math.min(maxY, mouseY));
   }
+
   /**
-   * Detects the current device breakpoint and returns a corresponding configuration object.
-   * @returns {{modalWidth: number, modalHeight: number, titleSize: number, subtitleSize: number, buttonSize: number, headerSize: number, spacing: {large: number, medium: number, small: number}, breakpoint: string}}
+   * Returns responsive UI dimensions and breakpoint info.
+   * @returns {object} - Responsive configuration object.
    */
   static getResponsiveDimensions() {
     const screenWidth = width();
     const screenHeight = height();
-    
-    // Define breakpoints
+    // Device breakpoints
     const breakpoints = {
       mobile: { width: 768, height: 600 },
       tablet: { width: 1024, height: 768 },
       laptop: { width: 1366, height: 900 },
       desktop: { width: 1920, height: 1080 }
     };
-    
     // Determine current breakpoint
     let currentBreakpoint = 'desktop';
     if (screenWidth <= breakpoints.mobile.width || screenHeight <= breakpoints.mobile.height) {
@@ -91,8 +86,7 @@ class GameUtils {
     } else if (screenWidth <= breakpoints.laptop.width || screenHeight <= breakpoints.laptop.height) {
       currentBreakpoint = 'laptop';
     }
-    
-    // Breakpoint-specific configurations
+    // Breakpoint-specific UI configs
     const configs = {
       mobile: {
         modalWidth: 300,
@@ -131,27 +125,26 @@ class GameUtils {
         spacing: { large: 40, medium: 24, small: 16 }
       }
     };
-    
     return {
       ...configs[currentBreakpoint],
       breakpoint: currentBreakpoint
     };
   }
 }
-// UI Manager Class
+
+// UI Manager class for handling UI elements
 class UIManager {
-  static headerHeight = 60;
+  static headerHeight = 60; // Height of the top header bar
 
   /**
-   * Creates the game's top header with a title, game mode, and timer.
-   * @param {string} gameMode - The current game mode (e.g., 'singleplayer').
-   * @param {object} gameInstance - The main game object containing state like gameTime.
+   * Creates the top header UI with title, mode, and timer.
+   * @param {string} gameMode - Current game mode.
+   * @param {object} gameInstance - Game state object.
    */
   static createHeader(gameMode, gameInstance) {
     const responsive = GameUtils.getResponsiveDimensions();
-    
-    // Header background
-    // Creates a black rectangle at the top of the screen.
+
+    // Header background bar
     add([
       pos(0, 0),
       rect(width(), this.headerHeight),
@@ -160,8 +153,7 @@ class UIManager {
       "header",
     ]);
 
-    // Header title
-    // Adds the "PONG GAME" title to the header.
+    // Game title text
     add([
       text("PONG GAME", { size: responsive.headerSize }),
       pos(20, this.headerHeight / 2),
@@ -171,8 +163,7 @@ class UIManager {
       "header",
     ]);
 
-    // Mode display
-    // Shows the current game mode (e.g., "Mode: SINGLEPLAYER").
+    // Game mode display
     add([
       text(`Mode: ${gameMode.toUpperCase()}`, { size: responsive.headerSize * 0.7 }),
       pos(center().x, this.headerHeight / 2),
@@ -182,8 +173,7 @@ class UIManager {
       "header",
     ]);
 
-    // Timer in header
-    // Displays the game time, updating it in real-time if the game is playing.
+    // Timer display (updates in real-time)
     add([
       text("Time: 0:00", { size: responsive.headerSize * 0.8 }),
       pos(width() - 20, this.headerHeight / 2),
@@ -200,8 +190,7 @@ class UIManager {
       },
     ]);
 
-    // Game area separator line
-    // Draws a thin gray line to separate the header from the game area.
+    // Separator line below header
     add([
       pos(0, this.headerHeight),
       rect(width(), 2),
@@ -210,12 +199,12 @@ class UIManager {
       "header",
     ]);
   }
+
   /**
-   * Creates the instruction text for the game.
-   * @param {object} responsive - The responsive configuration object.
+   * Displays instructions for controlling the game.
+   * @param {object} responsive - Responsive UI config.
    */
   static createInstructions(responsive) {
-    // Adds text guiding the player to use the mouse for control.
     add([
       text("Move your mouse to control the paddles", { size: responsive.buttonSize * 0.8 }),
       pos(center().x, center().y + responsive.modalHeight * 0.15),
@@ -228,10 +217,9 @@ class UIManager {
 
   /**
    * Creates the "START GAME" button.
-   * @param {object} responsive - The responsive configuration object.
+   * @param {object} responsive - Responsive UI config.
    */
   static createStartButton(responsive) {
-    // Creates a clickable "START GAME" text button.
     add([
       text("START GAME", { size: responsive.subtitleSize }),
       pos(center().x, center().y + responsive.modalHeight * 0.28),
@@ -245,15 +233,14 @@ class UIManager {
   }
 
   /**
-   * Creates the game over screen, displaying the final score and time.
-   * @param {number} score - The final game score.
-   * @param {string} finalTime - The formatted final game time.
+   * Displays the game over screen with score and time.
+   * @param {number} score - Final score.
+   * @param {string} finalTime - Final time played.
    */
   static createGameOverScreen(score, finalTime) {
     const responsive = GameUtils.getResponsiveDimensions();
-    
-    // Game over background (responsive)
-    // Creates a modal-style background for the game over screen.
+
+    // Modal background for game over
     add([
       pos(center().x, center().y),
       rect(responsive.modalWidth, responsive.modalHeight),
@@ -264,8 +251,7 @@ class UIManager {
       "gameOver",
     ]);
 
-    // Game Over title (responsive positioning)
-    // Adds the "GAME OVER!" title to the top of the modal.
+    // "GAME OVER!" title
     add([
       text("GAME OVER!", { size: responsive.titleSize }),
       pos(center().x, center().y - responsive.modalHeight * 0.35),
@@ -275,8 +261,7 @@ class UIManager {
       "gameOver",
     ]);
 
-    // Final score (responsive positioning)
-    // Displays the player's final score on the modal.
+    // Final score display
     add([
       text(`Final Score: ${score}`, { size: responsive.subtitleSize }),
       pos(center().x, center().y - responsive.modalHeight * 0.15),
@@ -284,6 +269,49 @@ class UIManager {
       color(50, 50, 50),
       z(40),
       "gameOver",
+    ]);
+
+    // Final time display
+    add([
+      text(`Time Played: ${GameUtils.formatTime(finalTime)}`, { size: responsive.subtitleSize }),
+      pos(center().x, center().y - responsive.modalHeight * 0.05),
+      anchor("center"),
+      color(50, 50, 50),
+      z(40),
+      "gameOver",
+    ]);
+
+    // Add game over buttons
+    this.createGameOverButtons(responsive);
+  }
+
+  /**
+   * Adds "PLAY AGAIN" and "MAIN MENU" buttons to the game over screen.
+   * @param {object} responsive - Responsive UI config.
+   */
+  static createGameOverButtons(responsive) {
+    // "PLAY AGAIN" button
+    add([
+      text("PLAY AGAIN", { size: responsive.buttonSize }),
+      pos(center().x, center().y + responsive.modalHeight * 0.12),
+      anchor("center"),
+      color(0, 150, 0),
+      area(),
+      z(40),
+      "gameOver",
+      "playAgainButton",
+    ]);
+
+    // "MAIN MENU" button
+    add([
+      text("MAIN MENU", { size: responsive.buttonSize }),
+      pos(center().x, center().y + responsive.modalHeight * 0.25),
+      anchor("center"),
+      color(100, 100, 100),
+      area(),
+      z(40),
+      "gameOver",
+      "menuButton",
     ]);
   }
 }

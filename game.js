@@ -405,3 +405,226 @@ class BallManager {
     return this.balls.length;
   }
 }
+
+// Game Object Manager Class
+class GameObjectManager {
+  static createPaddles(headerHeight) {
+    // Breakpoint-based paddle dimensions
+    const responsive = GameUtils.getResponsiveDimensions();
+    const paddleConfigs = {
+      mobile: { width: 15, height: 100, offset: 25 },
+      tablet: { width: 18, height: 120, offset: 30 },
+      laptop: { width: 20, height: 140, offset: 35 },
+      desktop: { width: 22, height: 160, offset: 40 }
+    };
+    
+    const config = paddleConfigs[responsive.breakpoint];
+    
+    const paddle1 = add([
+      pos(config.offset, headerHeight + config.height / 2 + 20),
+      rect(config.width, config.height),
+      outline(4),
+      anchor("center"),
+      area(),
+      "paddle",
+      "game",
+    ]);
+
+    const paddle2 = add([
+      pos(width() - config.offset, headerHeight + config.height / 2 + 20),
+      rect(config.width, config.height),
+      outline(4),
+      anchor("center"),
+      area(),
+      "paddle",
+      "game",
+    ]);
+
+    return [paddle1, paddle2];
+  }
+
+  static createScoreDisplay(gameInstance, headerHeight) {
+    return add([
+      text(gameInstance.score),
+      pos(center().x, headerHeight + (height() - headerHeight) / 2),
+      anchor("center"),
+      z(50),
+      "game",
+      {
+        update() {
+          this.text = gameInstance.score;
+        },
+      },
+    ]);
+  }
+}
+
+// Main Game Class
+class PongGame {
+  constructor() {
+    this.gameState = "menu";
+    this.gameMode = "speed";
+    this.gameTime = 0;
+    this.finalTime = 0;
+    this.score = 0;
+    this.lastBallSpawnTime = 0;
+    this.ballManager = new BallManager();
+    this.paddles = [];
+
+    this.initializeGame();
+    this.setupEventHandlers();
+  }
+
+  initializeGame() {
+    this.showMenu();
+  }
+
+  showMenu() {
+    this.gameState = "menu";
+    destroyAll("game");
+    destroyAll("header");
+    UIManager.createMenu(this.gameMode);
+  }
+
+  startGame() {
+    this.gameState = "playing";
+    this.gameTime = 0;
+    this.lastBallSpawnTime = 0;
+    this.score = 0;
+    this.ballManager.reset();
+
+    destroyAll("menu");
+    destroyAll("gameOver");
+
+    UIManager.createHeader(this.gameMode, this);
+    this.createGameObjects();
+  }
+
+  createGameObjects() {
+    this.paddles = GameObjectManager.createPaddles(UIManager.headerHeight);
+    GameObjectManager.createScoreDisplay(this, UIManager.headerHeight);
+    this.ballManager.createInitialBall(UIManager.headerHeight);
+  }
+
+  showGameOver() {
+    this.gameState = "gameOver";
+    this.finalTime = this.gameTime;
+
+    destroyAll("game");
+    destroyAll("header");
+
+    UIManager.createGameOverScreen(this.score, this.finalTime);
+  }
+
+  updateGame() {
+    if (this.gameState === "playing" && this.ballManager.count > 0) {
+      this.gameTime += dt();
+
+      // Spawn new balls in agility mode
+      if (this.gameMode === "agility" && this.gameTime - this.lastBallSpawnTime >= 10 && this.ballManager.count < 10) {
+        this.ballManager.spawnNewBall(UIManager.headerHeight, height());
+        this.lastBallSpawnTime = this.gameTime;
+      }
+
+      // Update all balls
+      this.ballManager.updateBalls(UIManager.headerHeight, height(), () => {
+        this.showGameOver();
+      });
+    }
+  }
+
+  updatePaddles() {
+    if (this.gameState === "playing") {
+      this.paddles.forEach((paddle) => {
+        if (paddle && paddle.exists()) {
+          const constrainedY = GameUtils.constrainPaddlePosition(
+            mousePos().y,
+            UIManager.headerHeight,
+            height()
+          );
+          paddle.pos.y = constrainedY;
+        }
+      });
+    }
+  }
+
+  handleBallPaddleCollision(ball, paddle) {
+    if (this.gameState === "playing") {
+      this.score++;
+
+      // Calculate where the ball hit the paddle (normalized between -1 and 1)
+      const paddleCenter = paddle.pos.y;
+      const ballHitPos = ball.pos.y;
+      const paddleHeight = paddle.height || 140; // Get actual paddle height or use default
+      const hitOffset = (ballHitPos - paddleCenter) / (paddleHeight / 2);
+      
+      // Clamp the hit offset to prevent extreme angles
+      const clampedOffset = Math.max(-0.8, Math.min(0.8, hitOffset));
+      
+      // Calculate new velocity based on hit position
+      // Ball should reflect horizontally and get vertical component based on hit position
+      const newVelX = ball.pos.x < center().x ? 1 : -1; // Reflect horizontally
+      const newVelY = clampedOffset; // Vertical component based on hit position
+      
+      // Normalize the velocity vector
+      const newVelocity = vec2(newVelX, newVelY).unit();
+      ball.vel = newVelocity;
+      
+      // Mode-specific behavior - increase speed
+      ball.speed += 80;
+    }
+  }
+
+  setupEventHandlers() {
+    // Menu event handlers
+    onClick("startButton", () => {
+      this.startGame();
+    });
+
+    onClick("speedModeButton", () => {
+      if (this.gameMode !== "speed") {
+        this.gameMode = "speed";
+        this.showMenu();
+      }
+    });
+
+    onClick("agilityModeButton", () => {
+      if (this.gameMode !== "agility") {
+        this.gameMode = "agility";
+        this.showMenu();
+      }
+    });
+
+    onClick("playAgainButton", () => {
+      this.startGame();
+    });
+
+    onClick("menuButton", () => {
+      destroyAll("gameOver");
+      this.showMenu();
+    });
+
+    // Game update handlers
+    onUpdate("paddle", (p) => {
+      if (this.gameState === "playing") {
+        const constrainedY = GameUtils.constrainPaddlePosition(
+          mousePos().y,
+          UIManager.headerHeight,
+          height()
+        );
+        p.pos.y = constrainedY;
+      }
+    });
+
+    onUpdate(() => {
+      this.updateGame();
+    });
+
+    onCollide("ball", "paddle", (b, p) => {
+      this.handleBallPaddleCollision(b, p);
+    });
+  }
+}
+
+// Initialize the game
+const game = new PongGame();

@@ -141,6 +141,7 @@ class UIManager {
    * @param {string} gameMode - Current game mode.
    * @param {object} gameInstance - Game state object.
    */
+  
   static createHeader(gameMode, gameInstance) {
     const responsive = GameUtils.getResponsiveDimensions();
 
@@ -199,7 +200,104 @@ class UIManager {
       "header",
     ]);
   }
+  static createMenu(gameMode) {
+    const responsive = GameUtils.getResponsiveDimensions();
+    const isSmallScreen = height() <= 800 || width() <= 1400;
+    
+    // Menu background (responsive)
+    add([
+      pos(center().x, center().y),
+      rect(responsive.modalWidth, responsive.modalHeight),
+      color(240, 240, 240),
+      outline(4),
+      anchor("center"),
+      z(30),
+      "menu",
+    ]);
 
+    // Title (responsive positioning)
+    add([
+      text("WELCOME TO PONG!", { size: responsive.titleSize }),
+      pos(center().x, center().y - responsive.modalHeight * 0.35),
+      anchor("center"),
+      color(50, 50, 50),
+      z(40),
+      "menu",
+    ]);
+
+    // Mode selection title (responsive positioning)
+    add([
+      text("SELECT GAME MODE:", { size: responsive.subtitleSize }),
+      pos(center().x, center().y - responsive.modalHeight * 0.2),
+      anchor("center"),
+      color(50, 50, 50),
+      z(40),
+      "menu",
+    ]);
+
+    this.createModeButtons(gameMode, responsive);
+    this.createModeDescriptions(responsive);
+    this.createInstructions(responsive);
+    this.createStartButton(responsive);
+  }
+
+  static createModeButtons(gameMode, responsive) {
+    const buttonSpacing = responsive.modalWidth * 0.25;
+    
+    // Speed Mode button
+    add([
+      text("SPEED MODE", { size: responsive.buttonSize }),
+      pos(center().x - buttonSpacing, center().y - responsive.modalHeight * 0.05),
+      anchor("center"),
+      color(
+        gameMode === "speed" ? 0 : 0,
+        gameMode === "speed" ? 150 : 0,
+        gameMode === "speed" ? 0 : 0
+      ),
+      area(),
+      z(40),
+      "menu",
+      "speedModeButton",
+    ]);
+
+    // Agility Mode button
+    add([
+      text("AGILITY MODE", { size: responsive.buttonSize }),
+      pos(center().x + buttonSpacing, center().y - responsive.modalHeight * 0.05),
+      anchor("center"),
+      color(
+        gameMode === "agility" ? 0 : 0,
+        gameMode === "agility" ? 150 : 0,
+        gameMode === "agility" ? 0 : 0
+      ),
+      area(),
+      z(40),
+      "menu",
+      "agilityModeButton",
+    ]);
+  }
+
+  static createModeDescriptions(responsive) {
+    const buttonSpacing = responsive.modalWidth * 0.25;
+    
+    add([
+      text("Ball gets faster", { size: responsive.buttonSize * 0.7 }),
+      pos(center().x - buttonSpacing, center().y + responsive.modalHeight * 0.05),
+      anchor("center"),
+      color(100, 100, 100),
+      z(40),
+      "menu",
+    ]);
+
+    add([
+      text("New ball every 10s", { size: responsive.buttonSize * 0.7 }),
+      pos(center().x + buttonSpacing, center().y + responsive.modalHeight * 0.05),
+      anchor("center"),
+      color(100, 100, 100),
+      z(40),
+      "menu",
+    ]);
+  }
   /**
    * Displays instructions for controlling the game.
    * @param {object} responsive - Responsive UI config.

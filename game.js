@@ -200,6 +200,10 @@ class UIManager {
       "header",
     ]);
   }
+  /**
+   * Creates the main menu UI, including mode selection and instructions.
+   * @param {string} gameMode - Current game mode.
+   */
   static createMenu(gameMode) {
     const responsive = GameUtils.getResponsiveDimensions();
     const isSmallScreen = height() <= 800 || width() <= 1400;
@@ -417,9 +421,17 @@ class UIManager {
 // Ball Manager Class
 class BallManager {
   constructor() {
-    this.balls = [];
+    this.balls = []; // Array to keep track of all balls in play
   }
 
+  /**
+   * Creates a new ball entity and adds it to the game.
+   * @param {number} x - X position.
+   * @param {number} y - Y position.
+   * @param {vec2} velocity - Initial velocity vector.
+   * @param {number} speed - Initial speed.
+   * @returns {KaboomGameObj} - The created ball object.
+   */
   createBall(x, y, velocity, speed) {
     // Breakpoint-based ball size
     const responsive = GameUtils.getResponsiveDimensions();
@@ -447,6 +459,11 @@ class BallManager {
     return ball;
   }
 
+  /**
+   * Creates the first ball at the center of the play area.
+   * @param {number} headerHeight - Height of the header UI.
+   * @returns {KaboomGameObj} - The created ball object.
+   */
   createInitialBall(headerHeight) {
     // Create ball with more predictable starting angle
     const startDirection = choose([-1, 1]); // Random left or right
@@ -461,11 +478,23 @@ class BallManager {
     );
   }
 
+  /**
+   * Spawns a new ball at a random position (used in agility mode).
+   * @param {number} headerHeight - Height of the header UI.
+   * @param {number} gameHeight - Height of the game area.
+   * @returns {KaboomGameObj} - The created ball object.
+   */
   spawnNewBall(headerHeight, gameHeight) {
     const spawnInfo = GameUtils.getRandomSpawnPosition(headerHeight, gameHeight);
     return this.createBall(spawnInfo.x, spawnInfo.y, spawnInfo.velocity, 600);
   }
 
+  /**
+   * Updates all balls: moves them, checks for wall bounces and game over.
+   * @param {number} headerHeight - Height of the header UI.
+   * @param {number} gameHeight - Height of the game area.
+   * @param {Function} onGameOver - Callback for when a ball goes off screen.
+   */
   updateBalls(headerHeight, gameHeight, onGameOver) {
     const ballsCopy = [...this.balls];
 
@@ -495,10 +524,16 @@ class BallManager {
     });
   }
 
+  /**
+   * Removes all balls from the manager (used when restarting).
+   */
   reset() {
     this.balls = [];
   }
 
+  /**
+   * Returns the current number of balls in play.
+   */
   get count() {
     return this.balls.length;
   }
@@ -506,6 +541,11 @@ class BallManager {
 
 // Game Object Manager Class
 class GameObjectManager {
+  /**
+   * Creates two paddles for the game (left and right).
+   * @param {number} headerHeight - Height of the header UI.
+   * @returns {Array<KaboomGameObj>} - Array of paddle objects.
+   */
   static createPaddles(headerHeight) {
     // Breakpoint-based paddle dimensions
     const responsive = GameUtils.getResponsiveDimensions();
@@ -541,6 +581,12 @@ class GameObjectManager {
     return [paddle1, paddle2];
   }
 
+  /**
+   * Creates the score display in the center of the play area.
+   * @param {object} gameInstance - The main game instance.
+   * @param {number} headerHeight - Height of the header UI.
+   * @returns {KaboomGameObj} - The score display object.
+   */
   static createScoreDisplay(gameInstance, headerHeight) {
     return add([
       text(gameInstance.score),
@@ -574,12 +620,16 @@ class PongGame {
     this.setupEventHandlers();    // Register all event handlers
   }
 
-  // Show the main menu
+  /**
+   * Initializes the game and shows the main menu.
+   */
   initializeGame() {
     this.showMenu();
   }
 
-  // Display menu UI and reset game objects
+  /**
+   * Shows the main menu and resets game objects.
+   */
   showMenu() {
     this.gameState = "menu";
     destroyAll("game");    // Remove all game objects
@@ -587,7 +637,9 @@ class PongGame {
     UIManager.createMenu(this.gameMode); // Show menu UI
   }
 
-  // Start a new game session
+  /**
+   * Starts a new game session.
+   */
   startGame() {
     this.gameState = "playing";
     this.gameTime = 0;
@@ -602,14 +654,18 @@ class PongGame {
     this.createGameObjects();                    // Create paddles, score, and initial ball
   }
 
-  // Create paddles, score display, and initial ball
+  /**
+   * Creates paddles, score display, and the initial ball.
+   */
   createGameObjects() {
     this.paddles = GameObjectManager.createPaddles(UIManager.headerHeight);
     GameObjectManager.createScoreDisplay(this, UIManager.headerHeight);
     this.ballManager.createInitialBall(UIManager.headerHeight);
   }
 
-  // Show game over screen and final stats
+  /**
+   * Shows the game over screen and final stats.
+   */
   showGameOver() {
     this.gameState = "gameOver";
     this.finalTime = this.gameTime;
@@ -620,7 +676,9 @@ class PongGame {
     UIManager.createGameOverScreen(this.score, this.finalTime); // Show game over UI
   }
 
-  // Main game update loop (called every frame)
+  /**
+   * Main game update loop, called every frame.
+   */
   updateGame() {
     if (this.gameState === "playing" && this.ballManager.count > 0) {
       this.gameTime += dt(); // Increment game time
@@ -638,7 +696,9 @@ class PongGame {
     }
   }
 
-  // Update paddle positions based on mouse Y position
+  /**
+   * Updates paddle positions based on mouse Y position.
+   */
   updatePaddles() {
     if (this.gameState === "playing") {
       this.paddles.forEach((paddle) => {
@@ -654,7 +714,11 @@ class PongGame {
     }
   }
 
-  // Handle collision between ball and paddle
+  /**
+   * Handles collision between a ball and a paddle.
+   * @param {KaboomGameObj} ball - The ball object.
+   * @param {KaboomGameObj} paddle - The paddle object.
+   */
   handleBallPaddleCollision(ball, paddle) {
     if (this.gameState === "playing") {
       this.score++; // Increase score on hit
@@ -682,7 +746,9 @@ class PongGame {
     }
   }
 
-  // Register all event handlers for UI and game logic
+  /**
+   * Registers all event handlers for UI and game logic.
+   */
   setupEventHandlers() {
     // Menu button handlers
     onClick("startButton", () => {
